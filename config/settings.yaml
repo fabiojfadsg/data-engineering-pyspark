@@ -1,0 +1,40 @@
+spark:
+  app_name: "Analise de Pedidos"
+
+logging:
+  version: 1
+  disable_existing_loggers: false
+  formatters:
+    padrao:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+      datefmt: "%Y-%m-%d %H:%M:%S"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: INFO
+      formatter: padrao
+      stream: ext://sys.stdout
+    arquivo_info:
+      class: logging.FileHandler
+      level: INFO
+      formatter: padrao
+      filename: "logs/pipeline_info.log"
+    arquivo_error:
+      class: logging.FileHandler
+      level: WARNING
+      formatter: padrao
+      filename: "logs/pipeline_errors.log"
+  root:
+    level: INFO
+    handlers: [console, arquivo_info, arquivo_error]
+
+paths:
+  clientes: "data/input/dataset-json-clientes/data/clientes.json.gz"
+  pedidos: "data/input/datasets-csv-pedidos/data/pedidos/"
+  output: "data/output/pedidos_por_cliente"
+
+file_options:
+  pedidos_csv:
+    compression: "gzip"
+    header: true
+    sep: ";"
