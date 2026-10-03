@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-engineering-pyspark"
+version = "0.1.0"
+description = "Pipeline de engenharia de dados com PySpark."
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pyspark>=3.5.0,<4.0.0",
+    "PyYAML>=6.0.0,<7.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black==25.1.0",
+    "build==1.3.0",
+    "ruff==0.12.9",
+]
+
+[project.scripts]
+run-data-pipeline = "main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = ["main"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -2,6 +2,7 @@
 
 import logging
 
+from pyspark.errors import AnalysisException, PySparkException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import (
     ArrayType,
@@ -13,6 +14,8 @@ from pyspark.sql.types import (
     StructType,
     TimestampType,
 )
+
+from data_engineering_pyspark.io_utils.exceptions import LoadPedidosException
 
 logger = logging.getLogger(__name__)
 
@@ -64,13 +67,40 @@ class DataHandler:
         self, path: str, compression: str, header: bool, sep: str
     ) -> DataFrame:
         """Carrega pedidos CSV com schema explícito."""
-        return (
-            self.spark.read.option("compression", compression)
-            .option("header", header)
-            .option("sep", sep)
-            .schema(self._get_schema_pedidos())
-            .csv(path)
-        )
+        try:
+            pedidos_df = (
+                self.spark.read.option("compression", compression)
+                .option("header", header)
+                .option("sep", sep)
+                .schema(self._get_schema_pedidos())
+                .csv(path)
+            )
+
+            if pedidos_df.isEmpty():
+                logger.warning(
+                    "O arquivo de pedidos em '%s' foi lido, mas não contém registros.",
+                    path,
+                )
+            return pedidos_df
+        except AnalysisException as error:
+            logger.error(
+                "Erro de análise/metadados no Spark [Classe: %s]: %s",
+                error.getErrorClass(),
+                error,
+            )
+            raise LoadPedidosException(
+                f"Falha ao carregar pedidos a partir de '{path}'"
+            ) from error
+        except PySparkException as error:
+            logger.error(
+                "Erro de processamento no PySpark [Classe: %s | SQLSTATE: %s]: %s",
+                error.getErrorClass(),
+                error.getSqlState(),
+                error,
+            )
+            raise LoadPedidosException(
+                f"Erro no motor Spark ao carregar pedidos em '{path}'"
+            ) from error
 
     @staticmethod
     def write_parquet(df: DataFrame, path: str) -> None:

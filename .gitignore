@@ -6,3 +6,6 @@ data/input/dataset-json-clientes/
 data/input/datasets-csv-pedidos/
 data/output/
 logs/*.log
+dist/
+build/
+*.egg-info/

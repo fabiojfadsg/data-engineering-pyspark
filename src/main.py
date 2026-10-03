@@ -1,19 +1,33 @@
-"""Ponto de entrada da análise de pedidos (Passos 1 a 8)."""
+"""Ponto de entrada da análise de pedidos (Passos 1 a 9)."""
 
 import logging
+import sys
 from pathlib import Path
 
-from config.settings import PROJECT_ROOT, carregar_config, configurar_logging
-from io_utils.data_handler import DataHandler
-from pipeline.pipeline import Pipeline
-from processing.transformations import Transformation
-from session.spark_session import SparkSessionManager
+from data_engineering_pyspark.config.settings import (
+    PROJECT_ROOT,
+    carregar_config,
+    configurar_logging,
+)
+from data_engineering_pyspark.io_utils.data_handler import DataHandler
+from data_engineering_pyspark.io_utils.exceptions import (
+    DataHandlerException,
+    LoadPedidosException,
+)
+from data_engineering_pyspark.pipeline.pipeline import Pipeline
+from data_engineering_pyspark.processing.transformations import Transformation
+from data_engineering_pyspark.session.spark_session import SparkSessionManager
+from pyspark.errors import PySparkException
 
 
 def _resolve_path(path: str) -> str:
     """Resolve caminhos de configuração relativos à raiz do projeto."""
     configured_path = Path(path)
-    return str(configured_path if configured_path.is_absolute() else PROJECT_ROOT / configured_path)
+    return str(
+        configured_path
+        if configured_path.is_absolute()
+        else PROJECT_ROOT / configured_path
+    )
 
 
 def main() -> None:
@@ -35,6 +49,23 @@ def main() -> None:
             data_handler=DataHandler(spark), transformer=Transformation()
         )
         pipeline.run(config=resolved_config)
+        logger.info("Pipeline finalizado com sucesso.")
+    except LoadPedidosException:
+        logger.exception("Falha no carregamento de pedidos.")
+        sys.exit(1)
+    except DataHandlerException:
+        logger.exception("Erro na camada de leitura/escrita de dados.")
+        sys.exit(1)
+    except PySparkException as error:
+        logger.exception(
+            "Erro originado no PySpark [Classe: %s | SQLSTATE: %s].",
+            error.getErrorClass(),
+            error.getSqlState(),
+        )
+        sys.exit(1)
+    except Exception:
+        logger.exception("Erro inesperado durante a execução do job.")
+        sys.exit(1)
     finally:
         spark.stop()
         logger.info("Sessão Spark finalizada.")
