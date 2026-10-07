@@ -3,30 +3,30 @@
 import logging
 import logging.config
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 import yaml
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_SETTINGS_PATH = PROJECT_ROOT / "config" / "settings.yaml"
 
 
-def carregar_config(path: Optional[Union[str, Path]] = None) -> Dict[str, Any]:
-    """Carrega configuração explícita, distribuída pelo Spark ou local.
+def carregar_config(path: Optional[str] = None) -> Dict[str, Any]:
+    """Carrega o arquivo de configuração YAML da aplicação.
 
-    A prioridade é: caminho informado, ``settings.yaml`` no diretório de
-    execução (entregue por ``spark-submit --files``) e, por fim, o arquivo
-    local do projeto.
+    Ordem de resolução:
+    1. Caminho explícito fornecido por argumento
+    2. 'settings.yaml' na raiz de execução (quando distribuído via spark-submit --files)
+    3. 'config/settings.yaml' (desenvolvimento local na raiz do projeto)
     """
-    if path is not None:
-        config_path = Path(path)
+    if path:
+        caminho = Path(path)
     elif Path("settings.yaml").is_file():
-        config_path = Path("settings.yaml")
+        caminho = Path("settings.yaml")
     else:
-        config_path = DEFAULT_SETTINGS_PATH
+        caminho = Path("config/settings.yaml")
 
-    with config_path.open("r", encoding="utf-8") as arquivo:
+    with open(caminho, "r", encoding="utf-8") as arquivo:
         config = yaml.safe_load(arquivo)
 
     if not isinstance(config, dict):
